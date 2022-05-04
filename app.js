@@ -21,7 +21,8 @@ mongoose.connect('mongodb://localhost/credit');
 const schs=new mongoose.Schema({
     username:String,
     password:String,
-    googleId:String
+    googleId:String,
+    secret:String
 });
 schs.plugin(passportLocalMongoose);
 schs.plugin(findOrCreate);
@@ -69,12 +70,16 @@ app.get('/register',function(req,res){
     res.render('register');
 });
 app.get('/secrets',function(req,res){
-    if(req.isAuthenticated())
-    {
-        res.render('secrets');
-    }
-    else
-    res.redirect('/login');
+    mdl.find({secret:{$ne:null}},function(err,result){
+        if(err)
+        console.log(err);
+        else{
+            if(result)
+            {
+                res.render('secrets',{data:result});
+            }
+        }
+    })
 })
 app.post('/register',function(req,res){
     mdl.register({username:req.body.username},req.body.password,function(err,user){
@@ -113,6 +118,19 @@ app.post('/login',function(req,res){
             });
         }
     });
+});
+app.get('/submit',function(req,res){
+    if(req.isAuthenticated())
+    res.render('submit');
+    else
+    res.redirect('/login');
+});
+app.post('/submit',function(req,res){
+    mdl.findByIdAndUpdate(req.user._id,{secret:req.body.secret},function(err,result){
+        if(err)
+        console.log(err);
+    });
+    res.redirect('/secrets');
 });
 app.listen(3000,function(){
     console.log('server is listening at port 3000');
